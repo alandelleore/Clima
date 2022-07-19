@@ -47,15 +47,15 @@ function mostrarError(mensaje) {
     }
 }
 
-function consultarAPI(ciudad, pais) {
+async function consultarAPI(ciudad, pais) {
 
     const appID = '02e572c83ee51b70a7e76e3ffdf1a3a5'
 
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad},${pais}&appid=${appID}`
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad},${pais}&appid=${appID}&lang=sp`
 
     Spinner(); // Muestra Spinner de carga
 
-    fetch(url)
+    await fetch(url)
         .then( respuesta => respuesta.json())
         .then( datos => {
 
@@ -68,21 +68,40 @@ function consultarAPI(ciudad, pais) {
             // Imprime la respuesta en el HTML
             mostrarClima(datos);
             console.log(datos)
-        });
+        })
+        .catch( error => {
+            console.log(error)
+        })
+        
 }
 
 function mostrarClima(datos) {
     const { name, main: { temp, temp_max, temp_min, humidity }} = datos;
-
+    const  km = datos.wind.speed
+    
+    
+    let hora = new Date()
+    
+    const [hour, minutes] = [hora.getHours(), hora.getMinutes()];
+    if(minutes >= 0 && minutes < 10){
+        minutes = "0" + minutes 
+    }
+    const horaActual = `${hour}:${minutes}`
+    
+    const viento = vientoFormula(km)
+    console.log(viento)
     const centigrados = kelvinACentigrados(temp);
     const max = kelvinACentigrados(temp_max);
     const min = kelvinACentigrados(temp_min);
 
     const nombreCiudad = document.createElement('p');
-    nombreCiudad.textContent = `${name}`;
+    nombreCiudad.textContent = `${name} | ${horaActual}`;
     nombreCiudad.classList.add('font-bold', 'text-2xl')
 
-    
+    const descripcion = document.createElement('p');
+    descripcion.textContent = `${datos.weather[0].description.charAt(0).toUpperCase() + datos.weather[0].description.slice(1)}`
+    descripcion.classList.add( 'text-2xl')
+
     const actual = document.createElement('p');
     actual.innerHTML = `${centigrados} &#8451;`
     actual.classList.add('font-bold', 'text-6xl');
@@ -99,19 +118,42 @@ function mostrarClima(datos) {
     humedad.innerHTML = `Humedad: ${humidity} %`
     humedad.classList.add('text-xl');
 
+    const velocidadViento = document.createElement('p');
+    velocidadViento.innerHTML = `Viento: ${viento} km/h`
+
+    const divisor = document.createElement('div');
+    divisor.innerHTML = '<hr/>';
+    divisor.classList.add('mt-4');
+
+    const iconoClima = document.createElement('div');
+    iconoClima.innerHTML = `<div><img src="http://openweathermap.org/img/wn/${datos.weather[0].icon}@2x.png" alt=""></div>
+                            <div><p>${centigrados} &#8451</p></div>
+                            `;
+    iconoClima.classList.add('font-bold', 'text-6xl', 'flex', 'justify-center')
+    
 
     const resultadoDiv = document.createElement('div');
-    resultadoDiv.classList.add('text-center', 'text-white');
+    resultadoDiv.classList.add('text-center', 'text-white', 'texto');
+
+   
+
+    
     resultadoDiv.appendChild(nombreCiudad);
-    resultadoDiv.appendChild(actual);
+    resultadoDiv.appendChild(iconoClima);
+    resultadoDiv.appendChild(descripcion);
     resultadoDiv.appendChild(tempMaxima);
     resultadoDiv.appendChild(tempMinima);
     resultadoDiv.appendChild(humedad);
+    resultadoDiv.appendChild(velocidadViento);
+    resultadoDiv.appendChild(divisor);
+    
 
     resultado.appendChild(resultadoDiv);
 }
 
 const kelvinACentigrados = grados => parseInt(grados - 273.15);
+
+const vientoFormula = velocidad => parseInt(velocidad * 3.6)
 
 
 function limpiarHTML() {
